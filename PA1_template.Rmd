@@ -7,19 +7,60 @@ output:
 
 
 ## Loading and preprocessing the data
-
-
+```{r}
+df <- read.csv("./data/activity.csv", stringsAsFactors=FALSE)
+df$date <- as.Date(df$date, "%Y-%m-%d")
+df$interval <- as.numeric(df$interval)
+```
 
 ## What is mean total number of steps taken per day?
+```{r}
+steps <- tapply(df$steps, df$date, sum)
+hist(steps)
 
-
+mean_steps <- mean(steps, na.rm = TRUE)
+median_steps <- median(steps, na.rm = TRUE)
+```
+The mean and median of the total number of steps taken per day are `r mean_steps` and `r median_steps` respectively.
 
 ## What is the average daily activity pattern?
-
-
+```{r}
+avgs <- tapply(df$steps, df$interval, mean, na.rm = TRUE)
+plot(names(avgs), avgs, type = "l", xlab = "Interval")
+max_avg <- names(avgs)[which.max(avgs)]
+```
+Interval `r max_avg`, on average across all the days in the dataset, contains the maximum number of steps
 
 ## Imputing missing values
+```{r}
+missing <- is.na(df$steps)
+n.missing <- sum(missing)
+not_missing <- df$steps[!missing]
+# randomly assign non-missing values
+df$steps[missing] <- sample(not_missing, n.missing, replace=TRUE)
 
+steps <- tapply(df$steps, df$date, sum)
+hist(steps)
 
+mean_steps <- mean(steps, na.rm = TRUE)
+median_steps <- median(steps, na.rm = TRUE)
+```
+The total number of missing values in the dataset is `r n.missing`.
+The mean and median of the total number of steps taken per day are `r mean_steps` and `r median_steps` respectively.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+ends <- weekdays(df$date) == "Saturday" | weekdays(df$date) == "Saturday"
+df$weekday <- as.factor(ifelse(ends, "weekend", "weekday"))
+
+weekends <- df[ends,]
+weekdays <- df[!ends,]
+weekend_avg <- tapply(weekends$steps, weekends$interval, mean)
+weekday_avg <- tapply(weekdays$steps, weekdays$interval, mean)
+range <- range(weekend_avg, weekday_avg)
+
+par(mfrow = c(1,2))
+plot(names(weekend_avg), weekend_avg, type = "l", ylab = "Number of steps", xlab = "Interval on weekends", ylim = range)
+plot(names(weekday_avg), weekday_avg, type = "l", ylab = "Number of steps", xlab = "Interval on weekdays", ylim = range)
+```
+
